@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kwenta — Household Budget Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #142226;
+    --bg-elevated: #1B2E34;
+    --card: #22383F;
+    --card-hover: #2A444C;
+    --accent-yellow: #F2B441;
+    --accent-coral: #E8654F;
+    --accent-green: #8FBB6E;
+    --text: #F4F0E3;
+    --text-muted: #94ACAF;
+    --border: rgba(244,240,227,0.10);
+    --border-strong: rgba(244,240,227,0.22);
+    --font-display: 'Fraunces', serif;
+    --font-body: 'IBM Plex Sans', sans-serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+  }
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  .app{
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 20px 16px 100px;
+  }
+
+  /* ---------- Header ---------- */
+  .header{
+    padding: 6px 2px 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 18px;
+  }
+  .header__eyebrow{
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent-yellow);
+    margin: 0 0 6px;
+  }
+  .header__title{
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 34px;
+    margin: 0 0 12px;
+    letter-spacing: -0.01em;
+  }
+  .header__stat{
+    display:flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .header__stat-value{
+    font-family: var(--font-mono);
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .header__stat-label{
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .header__bar{
+    margin-top: 10px;
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(244,240,227,0.08);
+    overflow: hidden;
+  }
+  .header__bar-fill{
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-green), var(--accent-yellow));
+    border-radius: 3px;
+    transition: width 0.4s ease;
+  }
+
+  /* ---------- Week tabs ---------- */
+  .weektabs{
+    display:flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+  .weektab{
+    font-family: var(--font-mono);
+    font-size: 13px;
+    padding: 9px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border-strong);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: all 0.15s ease;
+  }
+  .weektab:hover{ border-color: var(--accent-yellow); color: var(--text); }
+  .weektab.active{
+    background: var(--accent-yellow);
+    border-color: var(--accent-yellow);
+    color: #1B2E34;
+    font-weight: 600;
+  }
+
+  /* ---------- Week strip (signature element) ---------- */
+  .weekstrip{
+    display:flex;
+    justify-content: space-between;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 10px;
+    margin-bottom: 18px;
+  }
+  .daypill{
+    display:flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+  }
+  .daypill__label{
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+  }
+  .daypill__dot{
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background: rgba(244,240,227,0.06);
+  }
+  .daypill--grocery .daypill__dot{ background: rgba(242,180,65,0.18); color: var(--accent-yellow); }
+  .daypill--grocery .daypill__label{ color: var(--accent-yellow); }
+  .daypill--laundry .daypill__dot{ background: rgba(232,101,79,0.18); color: var(--accent-coral); }
+  .daypill--laundry .daypill__label{ color: var(--accent-coral); }
+  .daypill svg{ width:14px; height:14px; }
+
+  /* ---------- Summary card ---------- */
+  .summary{
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 18px;
+    margin-bottom: 18px;
+  }
+  .summary__row{
+    display:flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+  .summary__row span:last-child{
+    font-family: var(--font-mono);
+    color: var(--text);
+  }
+  .summary__row--total{
+    margin-top: 8px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border-strong);
+    font-size: 14px;
+    color: var(--text);
+    font-weight: 600;
+  }
+  .summary__row--total span:last-child{ font-size: 17px; }
+
+  /* ---------- Section label ---------- */
+  .section-label{
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin: 22px 2px 10px;
+  }
+
+  /* ---------- Category grid ---------- */
+  .categories{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .catcard{
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+    text-align: left;
+  }
+  .catcard:hover{ background: var(--card-hover); }
+  .catcard:active{ transform: scale(0.98); }
+  .catcard__top{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .catcard__icon{
+    width: 30px; height:30px;
+    border-radius: 9px;
+    display:flex; align-items:center; justify-content:center;
+    background: rgba(244,240,227,0.06);
+  }
+  .catcard__icon svg{ width:16px; height:16px; }
+  .catcard__day{
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.06em;
+  }
+  .catcard__name{
+    font-size: 13px;
+    font-weight: 600;
+    margin: 0 0 8px;
+  }
+  .catcard__amounts{
+    display:flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-family: var(--font-mono);
+    margin-bottom: 8px;
+  }
+  .catcard__spent{ font-size: 16px; font-weight: 600; }
+  .catcard__budget{ font-size: 11px; color: var(--text-muted); }
+  .catcard__bar{
+    height: 5px;
+    border-radius: 3px;
+    background: rgba(244,240,227,0.08);
+    overflow: hidden;
+  }
+  .catcard__bar-fill{ height:100%; border-radius: 3px; transition: width 0.3s ease; }
+  .bar--ok{ background: var(--accent-green); }
+  .bar--warn{ background: var(--accent-yellow); }
+  .bar--over{ background: var(--accent-coral); }
+
+  /* ---------- Transactions (resibo style) ---------- */
+  .txlist{
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 4px 16px;
+  }
+  .txrow{
+    display:flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px dashed var(--border);
+    gap: 10px;
+  }
+  .txrow:last-child{ border-bottom: none; }
+  .txrow__left{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+  .txrow__cat{ font-size: 13px; font-weight: 600; }
+  .txrow__note{ font-size: 12px; color: var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width: 220px; }
+  .txrow__date{ font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
+  .txrow__right{ display:flex; align-items:center; gap: 10px; flex-shrink:0; }
+  .txrow__amount{ font-family: var(--font-mono); font-size: 14px; font-weight: 600; }
+  .txrow__del{
+    background:none; border:none; color: var(--text-muted); cursor:pointer;
+    font-size: 16px; line-height:1; padding: 4px;
+  }
+  .txrow__del:hover{ color: var(--accent-coral); }
+  .empty{
+    padding: 28px 6px;
+    text-align:center;
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+
+  /* ---------- Add drawer ---------- */
+  .overlay{
+    position: fixed; inset:0;
+    background: rgba(10,16,18,0.55);
+    display:none;
+    align-items:flex-end;
+    justify-content:center;
+    z-index: 10;
+  }
+  .overlay.open{ display:flex; }
+  .drawer{
+    width:100%;
+    max-width: 560px;
+    background: var(--bg-elevated);
+    border-radius: 20px 20px 0 0;
+    padding: 20px 20px 24px;
+    border-top: 1px solid var(--border-strong);
+  }
+  .drawer__header{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom: 14px;
+  }
+  .drawer__title{ font-family: var(--font-display); font-size: 20px; font-weight:700; margin:0; }
+  .drawer__close{ background:none; border:none; color: var(--text-muted); font-size:22px; cursor:pointer; line-height:1; }
+  .drawer__budgetline{ font-size: 12px; color: var(--text-muted); margin-bottom: 16px; font-family: var(--font-mono); }
+  .chips{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom: 14px; }
+  .chip{
+    font-family: var(--font-mono);
+    font-size: 13px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border-strong);
+    background: transparent;
+    color: var(--text);
+    cursor:pointer;
+  }
+  .chip:hover, .chip.active{ background: var(--accent-yellow); border-color: var(--accent-yellow); color:#1B2E34; font-weight:600; }
+  .field{ margin-bottom: 12px; }
+  .field label{ display:block; font-size:11px; color: var(--text-muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.06em; font-family: var(--font-mono); }
+  .field input{
+    width:100%;
+    background: var(--card);
+    border: 1px solid var(--border-strong);
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 16px;
+  }
+  .field input:focus{ outline: none; border-color: var(--accent-yellow); }
+  .field input#tx-note{ font-family: var(--font-body); font-size: 14px; }
+  .drawer__submit{
+    width:100%;
+    background: var(--accent-yellow);
+    color: #1B2E34;
+    border:none;
+    border-radius: 12px;
+    padding: 14px;
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 15px;
+    cursor:pointer;
+    margin-top: 4px;
+  }
+  .drawer__submit:hover{ background: #f5c364; }
+
+  /* ---------- Footer ---------- */
+  .footer{
+    text-align:center;
+    margin-top: 28px;
+  }
+  .footer button{
+    background:none;
+    border:none;
+    color: var(--text-muted);
+    font-size: 12px;
+    text-decoration: underline;
+    cursor:pointer;
+    font-family: var(--font-body);
+  }
+
+  @media (max-width: 380px){
+    .categories{ grid-template-columns: 1fr 1fr; }
+    .header__title{ font-size: 28px; }
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <div class="header">
+    <p class="header__eyebrow">Kwenta · Quezon City household budget</p>
+    <h1 class="header__title">Kwenta</h1>
+    <div class="header__stat">
+      <span class="header__stat-value" id="total-remaining">₱0</span>
+      <span class="header__stat-label">left of ₱22,050 · 4 weeks</span>
+    </div>
+    <div class="header__bar"><div class="header__bar-fill" id="total-bar"></div></div>
+  </div>
+
+  <div class="weektabs" id="weektabs"></div>
+  <div class="weekstrip" id="weekstrip"></div>
+
+  <div class="summary" id="summary"></div>
+
+  <p class="section-label">This week's categories</p>
+  <div class="categories" id="categories"></div>
+
+  <p class="section-label">Recent entries</p>
+  <div class="txlist" id="txlist"></div>
+
+  <div class="footer">
+    <button id="reset-btn">Reset all data</button>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="drawer">
+    <div class="drawer__header">
+      <h2 class="drawer__title" id="drawer-title">Log expense</h2>
+      <button class="drawer__close" id="drawer-close">&times;</button>
+    </div>
+    <p class="drawer__budgetline" id="drawer-budgetline"></p>
+    <div class="chips" id="drawer-chips"></div>
+    <div class="field">
+      <label for="tx-amount">Amount (₱)</label>
+      <input type="number" id="tx-amount" inputmode="decimal" placeholder="0">
+    </div>
+    <div class="field">
+      <label for="tx-note">Note (optional)</label>
+      <input type="text" id="tx-note" placeholder="e.g. Puregold, 3kg rice">
+    </div>
+    <button class="drawer__submit" id="drawer-submit">Add to ledger</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  const TOTAL_BUDGET = 22050;
+
+  const CATEGORIES = {
+    groceries:      { name: 'Groceries',    day: 'MON', icon: iconBag(),    chips: [500,1000,1500,2000] },
+    laundry:        { name: 'Laundry',      day: 'SAT', icon: iconBasket(), chips: [150,300,450] },
+    transportation: { name: 'Transport',    day: null,  icon: iconRoute(),  chips: [20,50,100] },
+    food_outside:   { name: 'Food outside', day: null,  icon: iconPlate(),  chips: [100,200,400] },
+    misc:           { name: 'Misc / buffer',day: null,  icon: iconCoin(),   chips: [100,300,500] },
+  };
+
+  const WEEKS = [
+    { id:1, label:'Week 1', income:8550, budgets:{ groceries:2000, laundry:325, transportation:100, food_outside:1250, misc:4875 } },
+    { id:2, label:'Week 2', income:4500, budgets:{ groceries:2000, laundry:325, transportation:100, food_outside:1250, misc:825 } },
+    { id:3, label:'Week 3', income:4500, budgets:{ groceries:2000, laundry:325, transportation:100, food_outside:1250, misc:825 } },
+    { id:4, label:'Week 4', income:4500, budgets:{ groceries:2000, laundry:325, transportation:100, food_outside:1250, misc:825 } },
+  ];
+
+  const DAYS = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
+
+  let state = { activeWeek: 1, expenses: [], drawerCategory: null, chipSelected: null, loaded: false };
+
+  function iconBag(){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>'; }
+  function iconBasket(){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h16l-1.5 9a2 2 0 0 1-2 1.7H7.5a2 2 0 0 1-2-1.7L4 10z"/><path d="M9 10V7a3 3 0 0 1 6 0v3"/><path d="M9 14v3M12 14v3M15 14v3"/></svg>'; }
+  function iconRoute(){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.3"/><circle cx="18" cy="18" r="2.3"/><path d="M8 7c3 0 2 6 5 6s2-6 5-6"/></svg>'; }
+  function iconPlate(){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.2"/></svg>'; }
+  function iconCoin(){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9.5 10a2.5 2 0 0 1 2.5-1.5c1.4 0 2.5.7 2.5 1.8 0 2.4-5 1.4-5 3.8 0 1.1 1.1 1.9 2.5 1.9s2.5-.6 2.5-1.7"/></svg>'; }
+
+  const peso = n => '₱' + Math.round(n).toLocaleString('en-PH');
+
+  async function loadData(){
+    try{
+      const res = await window.storage.get('kwenta-expenses', false);
+      state.expenses = res && res.value ? JSON.parse(res.value) : [];
+    }catch(e){
+      state.expenses = [];
+    }
+    state.loaded = true;
+    render();
+  }
+
+  async function saveData(){
+    try{
+      await window.storage.set('kwenta-expenses', JSON.stringify(state.expenses), false);
+    }catch(e){
+      console.error('Could not save', e);
+    }
+  }
+
+  function weekSpend(weekId, category){
+    return state.expenses
+      .filter(e => e.week === weekId && (category ? e.category === category : true))
+      .reduce((s,e) => s + e.amount, 0);
+  }
+
+  function totalSpend(){
+    return state.expenses.reduce((s,e) => s + e.amount, 0);
+  }
+
+  function render(){
+    if(!state.loaded) return;
+    renderHeader();
+    renderWeekTabs();
+    renderWeekStrip();
+    renderSummary();
+    renderCategories();
+    renderTransactions();
+  }
+
+  function renderHeader(){
+    const spent = totalSpend();
+    const remaining = TOTAL_BUDGET - spent;
+    document.getElementById('total-remaining').textContent = peso(remaining);
+    const pct = Math.min(100, (spent/TOTAL_BUDGET)*100);
+    document.getElementById('total-bar').style.width = pct + '%';
+  }
+
+  function renderWeekTabs(){
+    const el = document.getElementById('weektabs');
+    el.innerHTML = WEEKS.map(w =>
+      `<button class="weektab ${w.id===state.activeWeek?'active':''}" data-week="${w.id}">${w.label}</button>`
+    ).join('');
+    el.querySelectorAll('.weektab').forEach(btn=>{
+      btn.addEventListener('click', ()=>{ state.activeWeek = parseInt(btn.dataset.week); render(); });
+    });
+  }
+
+  function renderWeekStrip(){
+    const el = document.getElementById('weekstrip');
+    el.innerHTML = DAYS.map(d=>{
+      if(d==='MON') return `<div class="daypill daypill--grocery"><div class="daypill__dot">${iconBag()}</div><span class="daypill__label">${d}</span></div>`;
+      if(d==='SAT') return `<div class="daypill daypill--laundry"><div class="daypill__dot">${iconBasket()}</div><span class="daypill__label">${d}</span></div>`;
+      return `<div class="daypill"><div class="daypill__dot"></div><span class="daypill__label">${d}</span></div>`;
+    }).join('');
+  }
+
+  function renderSummary(){
+    const week = WEEKS.find(w=>w.id===state.activeWeek);
+    const spent = weekSpend(week.id);
+    const remaining = week.income - spent;
+    const el = document.getElementById('summary');
+    el.innerHTML = `
+      <div class="summary__row"><span>Income this week</span><span>${peso(week.income)}</span></div>
+      <div class="summary__row"><span>Spent so far</span><span>${peso(spent)}</span></div>
+      <div class="summary__row summary__row--total"><span>Remaining</span><span>${peso(remaining)}</span></div>
+    `;
+  }
+
+  function renderCategories(){
+    const week = WEEKS.find(w=>w.id===state.activeWeek);
+    const el = document.getElementById('categories');
+    el.innerHTML = Object.keys(CATEGORIES).map(key=>{
+      const cat = CATEGORIES[key];
+      const budget = week.budgets[key];
+      const spent = weekSpend(week.id, key);
+      const pct = budget > 0 ? Math.min(100, (spent/budget)*100) : 0;
+      let barClass = 'bar--ok';
+      if(spent > budget) barClass = 'bar--over';
+      else if(pct >= 80) barClass = 'bar--warn';
+      return `
+        <button class="catcard" data-cat="${key}">
+          <div class="catcard__top">
+            <div class="catcard__icon">${cat.icon}</div>
+            ${cat.day ? `<span class="catcard__day">${cat.day}</span>` : ''}
+          </div>
+          <p class="catcard__name">${cat.name}</p>
+          <div class="catcard__amounts">
+            <span class="catcard__spent">${peso(spent)}</span>
+            <span class="catcard__budget">of ${peso(budget)}</span>
+          </div>
+          <div class="catcard__bar"><div class="catcard__bar-fill ${barClass}" style="width:${pct}%"></div></div>
+        </button>
+      `;
+    }).join('');
+    el.querySelectorAll('.catcard').forEach(btn=>{
+      btn.addEventListener('click', ()=> openDrawer(btn.dataset.cat));
+    });
+  }
+
+  function renderTransactions(){
+    const week = WEEKS.find(w=>w.id===state.activeWeek);
+    const el = document.getElementById('txlist');
+    const items = state.expenses
+      .filter(e=>e.week===week.id)
+      .sort((a,b)=> b.createdAt - a.createdAt);
+    if(items.length===0){
+      el.innerHTML = `<div class="empty">No entries logged for this week yet. Tap a category above to add one.</div>`;
+      return;
+    }
+    el.innerHTML = items.map(e=>{
+      const cat = CATEGORIES[e.category];
+      const d = new Date(e.createdAt);
+      const dateStr = d.toLocaleDateString('en-PH',{month:'short', day:'numeric'});
+      return `
+        <div class="txrow">
+          <div class="txrow__left">
+            <span class="txrow__cat">${cat.name}</span>
+            ${e.note ? `<span class="txrow__note">${escapeHtml(e.note)}</span>` : `<span class="txrow__date">${dateStr}</span>`}
+          </div>
+          <div class="txrow__right">
+            ${e.note ? `<span class="txrow__date">${dateStr}</span>` : ''}
+            <span class="txrow__amount">${peso(e.amount)}</span>
+            <button class="txrow__del" data-id="${e.id}">&times;</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+    el.querySelectorAll('.txrow__del').forEach(btn=>{
+      btn.addEventListener('click', ()=> deleteExpense(btn.dataset.id));
+    });
+  }
+
+  function escapeHtml(str){
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  function openDrawer(catKey){
+    state.drawerCategory = catKey;
+    state.chipSelected = null;
+    const cat = CATEGORIES[catKey];
+    const week = WEEKS.find(w=>w.id===state.activeWeek);
+    const spent = weekSpend(week.id, catKey);
+    const budget = week.budgets[catKey];
+    document.getElementById('drawer-title').textContent = 'Log: ' + cat.name;
+    document.getElementById('drawer-budgetline').textContent =
+      `${peso(spent)} spent of ${peso(budget)} budget this week — ${peso(Math.max(0,budget-spent))} left`;
+    document.getElementById('drawer-chips').innerHTML = cat.chips.map(amt=>
+      `<button class="chip" data-amt="${amt}">${peso(amt)}</button>`
+    ).join('');
+    document.querySelectorAll('.chip').forEach(chip=>{
+      chip.addEventListener('click', ()=>{
+        document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+        chip.classList.add('active');
+        document.getElementById('tx-amount').value = chip.dataset.amt;
+      });
+    });
+    document.getElementById('tx-amount').value = '';
+    document.getElementById('tx-note').value = '';
+    document.getElementById('overlay').classList.add('open');
+    setTimeout(()=> document.getElementById('tx-amount').focus(), 50);
+  }
+
+  function closeDrawer(){
+    document.getElementById('overlay').classList.remove('open');
+  }
+
+  async function submitExpense(){
+    const amount = parseFloat(document.getElementById('tx-amount').value);
+    if(!amount || amount <= 0){
+      document.getElementById('tx-amount').focus();
+      return;
+    }
+    const note = document.getElementById('tx-note').value.trim();
+    const expense = {
+      id: 'e' + Date.now() + Math.random().toString(36).slice(2,7),
+      week: state.activeWeek,
+      category: state.drawerCategory,
+      amount: amount,
+      note: note,
+      createdAt: Date.now(),
+    };
+    state.expenses.push(expense);
+    closeDrawer();
+    render();
+    await saveData();
+  }
+
+  async function deleteExpense(id){
+    state.expenses = state.expenses.filter(e=>e.id!==id);
+    render();
+    await saveData();
+  }
+
+  async function resetAll(){
+    if(!confirm('Clear all logged expenses? This cannot be undone.')) return;
+    state.expenses = [];
+    render();
+    await saveData();
+  }
+
+  document.getElementById('drawer-close').addEventListener('click', closeDrawer);
+  document.getElementById('overlay').addEventListener('click', (e)=>{ if(e.target.id==='overlay') closeDrawer(); });
+  document.getElementById('drawer-submit').addEventListener('click', submitExpense);
+  document.getElementById('tx-amount').addEventListener('keydown', (e)=>{ if(e.key==='Enter') submitExpense(); });
+  document.getElementById('reset-btn').addEventListener('click', resetAll);
+
+  loadData();
+})();
+</script>
+</body>
+</html>
